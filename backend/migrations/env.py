@@ -3,8 +3,10 @@ from logging.config import fileConfig
 
 from alembic import context
 from core.config import settings
-from database.models import Document  # noqa: F401
-from database.session import Base
+from database.models import (
+    Base,
+    Document,  # noqa: F401
+)
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
