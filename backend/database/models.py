@@ -20,10 +20,14 @@ class User(Base):
 
     # === RELATIONSHIPS ===
     # Parent of 'Folder' table => these are folders that a user has created
-    folders: Mapped[list["Folder"]] = relationship("Folder", back_populates="owner", cascade="all, delete-orphan", passive_deletes=True)
+    folders: Mapped[list["Folder"]] = relationship(
+        "Folder", back_populates="owner", cascade="all, delete-orphan", passive_deletes=True
+    )
 
     # Parent of 'Document' table => these are documents that a user has uploaded
-    documents: Mapped[list["Document"]] = relationship("Document", back_populates="owner", cascade="all, delete-orphan", passive_deletes=True)
+    documents: Mapped[list["Document"]] = relationship(
+        "Document", back_populates="owner", cascade="all, delete-orphan", passive_deletes=True
+    )
 
 
 class Folder(Base):
@@ -39,13 +43,17 @@ class Folder(Base):
     owner: Mapped["User"] = relationship("User", back_populates="folders")
 
     # Parent of 'Document' table => these are documents inside a folder
-    documents: Mapped[list["Document"]] = relationship("Document", back_populates="folder", cascade="all, delete-orphan", passive_deletes=True)
+    documents: Mapped[list["Document"]] = relationship(
+        "Document", back_populates="folder", cascade="all, delete-orphan", passive_deletes=True
+    )
 
     # Parent of 'Folder' table => this is the folder that contains folders
     parent_folder: Mapped["Folder | None"] = relationship("Folder", back_populates="sub_folders", remote_side=[id])
 
     # Child of 'Folder' table => these are folders inside a folder
-    sub_folders: Mapped[list["Folder"]] = relationship("Folder", back_populates="parent_folder", cascade="all, delete-orphan", passive_deletes=True)
+    sub_folders: Mapped[list["Folder"]] = relationship(
+        "Folder", back_populates="parent_folder", cascade="all, delete-orphan", passive_deletes=True
+    )
 
 
 class Document(Base):
@@ -61,7 +69,9 @@ class Document(Base):
 
     # === RELATIONSHIPS ===
     # Parent of 'Chunk' table => these are chunks from a document
-    chunks: Mapped[list["Chunk"]] = relationship("Chunk", back_populates="document", cascade="all, delete-orphan", passive_deletes=True)
+    chunks: Mapped[list["Chunk"]] = relationship(
+        "Chunk", back_populates="document", cascade="all, delete-orphan", passive_deletes=True
+    )
 
     # Child of 'User' table => this is the owner of a document
     owner: Mapped["User"] = relationship("User", back_populates="documents")
