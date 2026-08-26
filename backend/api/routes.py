@@ -1,4 +1,8 @@
-from fastapi import APIRouter
+from typing import Annotated
+
+from core.deps import get_current_user
+from database.models import User
+from fastapi import APIRouter, Depends
 
 router = APIRouter()
 
@@ -8,6 +12,6 @@ def read_root():
     return {"Hello": "World"}
 
 
-@router.get("/items/{item_id}")
-def read_item(item_id: int, q: str | None = None):
-    return {"item_id": item_id, "q": q}
+@router.get("/me")
+async def read_current_user(current_user: Annotated[User, Depends(get_current_user)]):
+    return {"id": current_user.id, "email": current_user.email}
