@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
+
 COOKIE_SECURITY_FLAGS = {
     "httponly": True,
     "secure": True,
