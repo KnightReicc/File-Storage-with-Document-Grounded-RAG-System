@@ -27,7 +27,7 @@ def _create_token(sub: int | str, token_type: str, expires_delta: timedelta) -> 
         "exp": now + expires_delta,
         "iat": now,
     }
-    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+    return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 
 def create_access_token(user_id: int | str) -> str:
@@ -41,7 +41,7 @@ def create_refresh_token(user_id: int | str) -> str:
 def verify_and_decode_token(token: str, expected_type: str = "access") -> TokenPayload:
     try:
         # Decodes and validates token field data types
-        decoded = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        decoded = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
         token_payload = TokenPayload(**decoded)
 
     # Catches expired, invalid, and bad tokens

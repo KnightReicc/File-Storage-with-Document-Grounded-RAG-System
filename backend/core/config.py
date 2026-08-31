@@ -10,10 +10,15 @@ class Settings(BaseSettings):
     postgres_host: str
     postgres_port: int
     # Token
-    secret_key: str
-    algorithm: str
+    jwt_secret_key: str
+    jwt_algorithm: str
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
+    # MinIO
+    minio_endpoint: str
+    minio_access_key: str
+    minio_secret_key: str
+    minio_bucket_name: str
 
     @property
     def database_url(self) -> str:
