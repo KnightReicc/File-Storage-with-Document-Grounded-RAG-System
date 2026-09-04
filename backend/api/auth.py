@@ -1,7 +1,7 @@
 from typing import Annotated
 
+from core.auth_schemas import MessageResponse, UserLogin, UserRegister, UserResponse
 from core.config import settings
-from core.schemas import MessageResponse, UserLogin, UserRegister, UserResponse
 from core.security import hash_password, needs_rehash, verify_password
 from core.tokens import create_access_token, create_refresh_token, verify_and_decode_token
 from database.models import User
