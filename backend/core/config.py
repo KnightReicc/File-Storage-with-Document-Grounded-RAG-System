@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     minio_access_key: str
     minio_secret_key: str
     minio_bucket_name: str
+    # UploadFile
+    max_upload_size_mb: int = 25
 
     @property
     def database_url(self) -> str:

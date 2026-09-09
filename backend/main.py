@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from api.auth import router as auth_router
+from api.documents import router as document_router
 from api.folders import router as folder_router
 from api.routes import router as base_router
 from fastapi import FastAPI
@@ -18,3 +19,4 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(base_router)
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 app.include_router(folder_router, prefix="/folders")
+app.include_router(document_router, prefix="/documents")

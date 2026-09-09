@@ -17,7 +17,7 @@ async def create_folder(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    # Check if current user owns the folder
+    # Check if the folder is being created inside a folder
     if folder_input.parent_folder_id is not None:
         query = select(Folder).where(Folder.id == folder_input.parent_folder_id, Folder.owner_id == current_user.id)
         result = await db.execute(query)
@@ -28,8 +28,10 @@ async def create_folder(
                 detail="Parent folder not found or access denied.",
             )
 
+    # Save the new folder to database
     new_folder = Folder(**folder_input.model_dump(), owner_id=current_user.id)
     db.add(new_folder)
     await db.commit()
     await db.refresh(new_folder)
+
     return new_folder
