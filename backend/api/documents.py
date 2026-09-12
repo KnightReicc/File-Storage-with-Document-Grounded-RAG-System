@@ -26,7 +26,7 @@ async def upload_document(
     db: Annotated[AsyncSession, Depends(get_db)],
     folder_id: int | None = Form(default=None),
 ):
-    # Check if the document being uploaded is inside a folder
+    # Check if folder belongs to the right user
     if folder_id is not None:
         query = select(Folder).where(Folder.id == folder_id, Folder.owner_id == current_user.id)
         result = await db.execute(query)

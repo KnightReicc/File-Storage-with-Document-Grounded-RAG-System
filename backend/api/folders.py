@@ -1,8 +1,8 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from core.deps import get_current_user
-from core.folder_schemas import FolderCreate, FolderResponse
-from database.models import Folder, User
+from core.folder_schemas import FolderContentsResponse, FolderCreate, FolderResponse
+from database.models import Document, Folder, User
 from database.session import get_db
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -17,6 +17,8 @@ async def create_folder(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
+    """Handles folder creation inside or outside (root level) of a folder."""
+
     # Check if the folder is being created inside a folder
     if folder_input.parent_folder_id is not None:
         query = select(Folder).where(Folder.id == folder_input.parent_folder_id, Folder.owner_id == current_user.id)
@@ -35,3 +37,61 @@ async def create_folder(
     await db.refresh(new_folder)
 
     return new_folder
+
+
+@router.get("/contents", response_model=FolderContentsResponse)
+async def read_folder(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    folder_id: int | None = None,
+    search: str | None = None,
+    sort_by: Literal["date", "name", "size"] = "date",
+    sort_order: Literal["asc", "desc"] = "desc",
+):
+    """Handles folder content fetching (e.g. subfolders, documents)."""
+
+    # If folder_id has value, check if folder belongs to the right user
+    if folder_id is not None:
+        query = select(Folder).where(Folder.id == folder_id, Folder.owner_id == current_user.id)
+        result = await db.execute(query)
+        found_folder = result.scalars().first()
+        if not found_folder:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Folder not found or access denied.",
+            )
+
+    # Base queries for secured queries
+    base_folder_query = select(Folder).where(Folder.owner_id == current_user.id)
+    base_document_query = select(Document).where(Document.owner_id == current_user.id)
+
+    if search:
+        folder_query = base_folder_query.where(Folder.name.ilike(f"%{search}%"))
+        document_query = base_document_query.where(Document.name.ilike(f"%{search}%"))
+    else:
+        folder_query = base_folder_query.where(Folder.parent_folder_id == folder_id)
+        document_query = base_document_query.where(Document.folder_id == folder_id)
+
+    # Pre-determine the columns that's going to be used for display
+    if sort_by == "date":
+        folder_col = Folder.created_at
+        document_col = Document.uploaded_at
+    elif sort_by == "name":
+        folder_col = Folder.name
+        document_col = Document.name
+    elif sort_by == "size":
+        folder_col = Folder.created_at  # falls back to date as folders don't have size
+        document_col = Document.file_size
+
+    # Order the col values in sort_by value
+    if sort_order == "desc":
+        final_folder_query = folder_query.order_by(folder_col.desc())
+        final_document_query = document_query.order_by(document_col.desc())
+    elif sort_order == "asc":
+        final_folder_query = folder_query.order_by(folder_col.asc())
+        final_document_query = document_query.order_by(document_col.asc())
+
+    folder_results = (await db.execute(final_folder_query)).scalars().all()
+    document_results = (await db.execute(final_document_query)).scalars().all()
+
+    return {"folders": folder_results, "documents": document_results}
