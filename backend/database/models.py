@@ -14,6 +14,7 @@ class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
     email: Mapped[str] = mapped_column(String(254), unique=True)
     password_hash: Mapped[str | None] = mapped_column(Text)
     google_id: Mapped[str | None] = mapped_column(Text, unique=True)
@@ -34,6 +35,7 @@ class Folder(Base):
     __tablename__ = "folders"
     id: Mapped[int] = mapped_column(primary_key=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
     name: Mapped[str] = mapped_column(String(255))
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     parent_folder_id: Mapped[int | None] = mapped_column(ForeignKey("folders.id", ondelete="CASCADE"), index=True)
@@ -59,7 +61,8 @@ class Folder(Base):
 class Document(Base):
     __tablename__ = "documents"
     id: Mapped[int] = mapped_column(primary_key=True)
-    uploaded_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
     name: Mapped[str] = mapped_column(String(255))
     mime_type: Mapped[str] = mapped_column(String(127))
     file_size: Mapped[int] = mapped_column(BigInteger)

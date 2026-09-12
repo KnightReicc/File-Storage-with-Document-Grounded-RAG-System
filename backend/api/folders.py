@@ -50,7 +50,7 @@ async def read_folder(
 ):
     """Handles folder content fetching (e.g. subfolders, documents)."""
 
-    # If folder_id has value, check if folder belongs to the right user
+    # Verify folder and its owner
     if folder_id is not None:
         query = select(Folder).where(Folder.id == folder_id, Folder.owner_id == current_user.id)
         result = await db.execute(query)
@@ -74,13 +74,13 @@ async def read_folder(
 
     # Pre-determine the columns that's going to be used for display
     if sort_by == "date":
-        folder_col = Folder.created_at
-        document_col = Document.uploaded_at
+        folder_col = Folder.updated_at
+        document_col = Document.updated_at
     elif sort_by == "name":
         folder_col = Folder.name
         document_col = Document.name
     elif sort_by == "size":
-        folder_col = Folder.created_at  # falls back to date as folders don't have size
+        folder_col = Folder.updated_at  # falls back to date as folders don't have size
         document_col = Document.file_size
 
     # Order the col values in sort_by value
@@ -95,3 +95,19 @@ async def read_folder(
     document_results = (await db.execute(final_document_query)).scalars().all()
 
     return {"folders": folder_results, "documents": document_results}
+
+
+@router.patch("/{folder_id}", response_model=FolderContentsResponse)
+async def rename_folder(
+    folder_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """Handles folder renaming."""
+
+    # Verify folder and its owner
+    query = select(Folder).where(Folder.id == folder_id, Folder.owner_id == current_user.id)
+    result = await db.execute(query)
+    found_user = result.scalars().first()
+    if not found_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found or access denied.")

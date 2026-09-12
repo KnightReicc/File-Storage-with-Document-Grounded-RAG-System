@@ -9,5 +9,6 @@ class DocumentResponse(BaseModel):
     name: str
     mime_type: str
     file_size: int
-    uploaded_at: datetime
+    created_at: datetime
+    updated_at: datetime
     folder_id: int | None

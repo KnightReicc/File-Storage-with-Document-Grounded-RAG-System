@@ -14,6 +14,7 @@ class FolderResponse(BaseModel):
     id: int
     name: str
     created_at: datetime
+    updated_at: datetime
     parent_folder_id: int | None
 
 
