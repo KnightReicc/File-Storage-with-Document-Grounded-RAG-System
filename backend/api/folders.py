@@ -1,5 +1,6 @@
 from typing import Annotated, Literal
 
+from core.common_schemas import RenameRequest
 from core.deps import get_current_user
 from core.folder_schemas import FolderContentsResponse, FolderCreate, FolderResponse
 from database.models import Document, Folder, User
@@ -48,7 +49,7 @@ async def read_folder(
     sort_by: Literal["date", "name", "size"] = "date",
     sort_order: Literal["asc", "desc"] = "desc",
 ):
-    """Handles folder content fetching (e.g. subfolders, documents)."""
+    """Handles the folder content fetching endpoint route (e.g. subfolders, documents)."""
 
     # Verify folder and its owner
     if folder_id is not None:
@@ -97,17 +98,24 @@ async def read_folder(
     return {"folders": folder_results, "documents": document_results}
 
 
-@router.patch("/{folder_id}", response_model=FolderContentsResponse)
+@router.patch("/{folder_id}", response_model=FolderResponse)
 async def rename_folder(
     folder_id: int,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    user_inp: RenameRequest,
     current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    """Handles folder renaming."""
+    """Handles the folder renaming endpoint route."""
 
     # Verify folder and its owner
     query = select(Folder).where(Folder.id == folder_id, Folder.owner_id == current_user.id)
     result = await db.execute(query)
-    found_user = result.scalars().first()
-    if not found_user:
+    found_folder = result.scalars().first()
+    if not found_folder:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found or access denied.")
+
+    found_folder.name = user_inp.name
+    await db.commit()
+    await db.refresh(found_folder)
+
+    return found_folder

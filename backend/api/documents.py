@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Annotated
 from uuid import uuid4
 
+from core.common_schemas import RenameRequest
 from core.config import settings
 from core.deps import get_current_user
 from core.document_schemas import DocumentResponse
@@ -26,6 +27,8 @@ async def upload_document(
     db: Annotated[AsyncSession, Depends(get_db)],
     folder_id: int | None = Form(default=None),
 ):
+    """Handles the document upload endpoint route."""
+
     # Check if folder belongs to the right user
     if folder_id is not None:
         query = select(Folder).where(Folder.id == folder_id, Folder.owner_id == current_user.id)
@@ -94,3 +97,29 @@ async def upload_document(
         ) from e
 
     return new_document
+
+
+@router.patch("/{document_id}", response_model=DocumentResponse)
+async def rename_document(
+    user_inp: RenameRequest,
+    document_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Handles the document renaming endpoint route."""
+
+    # Query the document and the document owner for verification
+    query = select(Document).where(Document.id == document_id, Document.owner_id == current_user.id)
+    result = await db.execute(query)
+    found_document = result.scalars().first()
+    if not found_document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found or access denied.",
+        )
+
+    found_document.name = user_inp.name
+    await db.commit()
+    await db.refresh(found_document)
+
+    return found_document
