@@ -20,7 +20,7 @@ async def create_folder(
 ):
     """Handles folder creation inside or outside (root level) of a folder."""
 
-    # Check if the folder is being created inside a folder
+    # Check if the folder is being created inside a folder, verify folder & ownership
     if folder_input.parent_folder_id is not None:
         query = select(Folder).where(Folder.id == folder_input.parent_folder_id, Folder.owner_id == current_user.id)
         result = await db.execute(query)
@@ -49,14 +49,14 @@ async def read_folder(
     sort_by: Literal["date", "name", "size"] = "date",
     sort_order: Literal["asc", "desc"] = "desc",
 ):
-    """Handles the folder content fetching endpoint route (e.g. subfolders, documents)."""
+    """Handles the folder content fetching endpoint (e.g. subfolders, documents)."""
 
-    # Verify folder and its owner
+    # If the folder is inside a folder, verify folder & ownership
     if folder_id is not None:
         query = select(Folder).where(Folder.id == folder_id, Folder.owner_id == current_user.id)
         result = await db.execute(query)
-        found_folder = result.scalars().first()
-        if not found_folder:
+        verified_folder = result.scalars().first()
+        if not verified_folder:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Folder not found or access denied.",
@@ -105,17 +105,17 @@ async def rename_folder(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    """Handles the folder renaming endpoint route."""
+    """Handles the folder renaming endpoint."""
 
-    # Verify folder and its owner
+    # Verify folder & ownership
     query = select(Folder).where(Folder.id == folder_id, Folder.owner_id == current_user.id)
     result = await db.execute(query)
-    found_folder = result.scalars().first()
-    if not found_folder:
+    verified_folder = result.scalars().first()
+    if not verified_folder:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found or access denied.")
 
-    found_folder.name = user_inp.name
+    verified_folder.name = user_inp.name
     await db.commit()
-    await db.refresh(found_folder)
+    await db.refresh(verified_folder)
 
-    return found_folder
+    return verified_folder

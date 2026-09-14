@@ -27,14 +27,14 @@ async def upload_document(
     db: Annotated[AsyncSession, Depends(get_db)],
     folder_id: int | None = Form(default=None),
 ):
-    """Handles the document upload endpoint route."""
+    """Handles the document upload endpoint."""
 
-    # Check if folder belongs to the right user
+    # If the document is inside a folder, verify folder & ownership
     if folder_id is not None:
         query = select(Folder).where(Folder.id == folder_id, Folder.owner_id == current_user.id)
         result = await db.execute(query)
-        found_folder = result.scalars().first()
-        if not found_folder:
+        verified_folder = result.scalars().first()
+        if not verified_folder:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Folder not found or access denied.",
@@ -106,20 +106,58 @@ async def rename_document(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    """Handles the document renaming endpoint route."""
+    """Handles the document renaming endpoint."""
 
-    # Query the document and the document owner for verification
+    # Verify document & ownership
     query = select(Document).where(Document.id == document_id, Document.owner_id == current_user.id)
     result = await db.execute(query)
-    found_document = result.scalars().first()
-    if not found_document:
+    verified_document = result.scalars().first()
+    if not verified_document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found or access denied.",
         )
 
-    found_document.name = user_inp.name
+    verified_document.name = user_inp.name
     await db.commit()
-    await db.refresh(found_document)
+    await db.refresh(verified_document)
 
-    return found_document
+    return verified_document
+
+
+@router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_document(
+    document_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Handles the document deletion endpoint."""
+
+    # Verify document and ownership
+    query = select(Document).where(Document.id == document_id, Document.owner_id == current_user.id)
+    result = await db.execute(query)
+    verified_document = result.scalars().first()
+    if not verified_document:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found or access denied.")
+
+    # Delete MinIO record first, and cancel operation upon failure
+    try:
+        await run_in_threadpool(delete_file, object_key=verified_document.object_key)
+    except RuntimeError as e:
+        logger.exception("MinIO deletion failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Storage system unavailable, please try again later.",
+        ) from e
+
+    # Delete database record upon successful MinIO deletion
+    try:
+        await db.delete(verified_document)
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        logger.exception(f"Dangling document reference - file deleted from MinIO but DB row remains, id={document_id}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="File removed from storage, but failed to update the database record.",
+        )
