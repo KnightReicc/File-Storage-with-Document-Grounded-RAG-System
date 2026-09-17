@@ -20,6 +20,7 @@ class TokenPayload(BaseModel):
 
 
 def _create_token(sub: int | str, token_type: str, expires_delta: timedelta) -> str:
+    """Helper function for creating JSON Web Token based on token type."""
     now = dt.now(timezone.utc)
     payload = {
         "sub": str(sub),

@@ -154,10 +154,10 @@ async def delete_document(
     try:
         await db.delete(verified_document)
         await db.commit()
-    except Exception:
+    except Exception as e:
         await db.rollback()
         logger.exception(f"Dangling document reference - file deleted from MinIO but DB row remains, id={document_id}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="File removed from storage, but failed to update the database record.",
-        )
+        ) from e
