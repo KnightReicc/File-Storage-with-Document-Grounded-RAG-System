@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     minio_access_key: str
     minio_secret_key: str
     minio_bucket_name: str
+    minio_url_expiration: int = 3600
     # UploadFile
     max_upload_size_mb: int = 25
 

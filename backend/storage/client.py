@@ -54,14 +54,26 @@ def upload_file(file_obj: UploadFile, object_key: str, bucket_name: str = settin
         raise RuntimeError(f"Failed to upload object to the bucket: {e.response['Error']['Message']}") from e
 
 
-def generate_download_url(object_key: str, bucket_name: str = settings.minio_bucket_name) -> str:
+def generate_download_url(
+    object_key: str,
+    disposition: str = "inline",
+    filename: str | None = None,
+    content_type: str | None = None,
+    bucket_name: str = settings.minio_bucket_name,
+) -> str:
     """Generates a download url of the file in the bucket."""
 
+    params = {"Bucket": bucket_name, "Key": object_key}
+
+    if filename:
+        safe_filename = filename.replace('"', "")
+        params["ResponseContentDisposition"] = f'{disposition}; filename="{safe_filename}"'
+
+    if content_type:
+        params["ResponseContentType"] = content_type
+
     try:
-        url = s3_client.generate_presigned_url(
-            "get_object", Params={"Bucket": bucket_name, "Key": object_key}, ExpiresIn=300
-        )
-        return url
+        return s3_client.generate_presigned_url("get_object", Params=params, ExpiresIn=settings.minio_url_expiration)
     except ClientError as e:
         raise RuntimeError(f"Failed to generate download url from the object: {e.response['Error']['Message']}") from e
 

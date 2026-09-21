@@ -1,12 +1,12 @@
 import logging
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import uuid4
 
 from core.common_schemas import RenameRequest
 from core.config import settings
 from core.deps import get_current_user
-from core.document_schemas import DocumentResponse
+from core.document_schemas import DocumentResponse, DownloadURLResponse
 from core.mime import sniff_mime_type
 from database.models import Document, Folder, User
 from database.session import get_db
@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
-from storage.client import delete_file, upload_file
+from storage.client import delete_file, generate_download_url, upload_file
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ async def upload_document(
     try:
         await run_in_threadpool(upload_file, file_obj=file_obj, object_key=unique_key)
     except RuntimeError as e:
-        logger.exception("MinIO upload failed")
+        logger.exception("MinIO upload failed.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Storage system unavailable, please try again later.",
@@ -83,7 +83,7 @@ async def upload_document(
     except Exception as e:
         # In case MinIO had a successful operation, but the database didn't
         await db.rollback()
-        logger.exception("Database save operation failed")
+        logger.exception("Database save operation failed.")
 
         try:
             # In case an orphan object is left inside the bucket
@@ -144,7 +144,7 @@ async def delete_document(
     try:
         await run_in_threadpool(delete_file, object_key=verified_document.object_key)
     except RuntimeError as e:
-        logger.exception("MinIO deletion failed")
+        logger.exception("MinIO deletion failed.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Storage system unavailable, please try again later.",
@@ -161,3 +161,36 @@ async def delete_document(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="File removed from storage, but failed to update the database record.",
         ) from e
+
+
+@router.get("/{document_id}/download", response_model=DownloadURLResponse)
+async def download_document_with_url(
+    document_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    disposition: Literal["inline", "attachment"] = "inline",
+):
+    """Handles the document downloading endpoint."""
+
+    # Verify document and ownership
+    query = select(Document).where(Document.id == document_id, Document.owner_id == current_user.id)
+    result = await db.execute(query)
+    verified_document = result.scalars().first()
+    if not verified_document:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found or access denied.")
+
+    try:
+        url = generate_download_url(
+            verified_document.object_key,
+            disposition=disposition,
+            filename=verified_document.name,
+            content_type=verified_document.mime_type,
+        )
+    except RuntimeError as e:
+        logger.exception("Download URL generation failed.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to generate download link, please try again later.",
+        ) from e
+
+    return DownloadURLResponse(url=url)

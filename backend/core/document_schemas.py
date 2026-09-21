@@ -12,3 +12,7 @@ class DocumentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     folder_id: int | None
+
+
+class DownloadURLResponse(BaseModel):
+    url: str
