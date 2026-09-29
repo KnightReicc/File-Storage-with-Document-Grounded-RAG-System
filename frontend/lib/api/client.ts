@@ -41,6 +41,8 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
     const response = await fetch(url, mergedOptions);
     if (!response.ok) {
         let errorMessage = `API Fetch Error: ${response.status} ${response.statusText}`;
+
+        // Get content type and verify
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
             try {
