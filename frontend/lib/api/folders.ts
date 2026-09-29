@@ -27,18 +27,12 @@ export async function getFolderContents(args: GetFolderContentsArgs = {}): Promi
 
 // Create a folder
 export async function createFolder(args: FolderCreate): Promise<FolderResponse> {
-  return apiFetch<FolderResponse>("/folders/", {
-    method: "POST",
-    body: JSON.stringify(args),
-  });
+  return apiFetch<FolderResponse>("/folders/", { method: "POST", body: JSON.stringify(args) });
 }
 
 // Rename a folder
 export async function renameFolder(id: number, args: RenameRequest): Promise<FolderResponse> {
-  return apiFetch<FolderResponse>(`/folders/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(args),
-  });
+  return apiFetch<FolderResponse>(`/folders/${id}`, { method: "PATCH", body: JSON.stringify(args) });
 }
 
 // Delete a folder

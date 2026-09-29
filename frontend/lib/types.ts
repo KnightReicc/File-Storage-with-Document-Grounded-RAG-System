@@ -36,3 +36,4 @@ export interface RenameRequest {
 
 export type SortBy = "date" | "name" | "size";
 export type SortOrder = "asc" | "desc";
+export type Disposition = "inline" | "attachment";
