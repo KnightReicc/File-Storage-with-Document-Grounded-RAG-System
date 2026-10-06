@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useFolderContents } from "@/hooks/useFolderContents";
 import { useFolderNavigation } from "@/hooks/useFolderNavigation";
+import { ItemActionsMenu } from "@/components/files/item-actions-menu";
 
 function DashboardContent() {
   const { currentFolderId, navigateToFolder, navigateBack } = useFolderNavigation();
@@ -29,16 +30,21 @@ function DashboardContent() {
         <ul className="space-y-2">
           {data.folders.map((folder) => (
             <li
-              key={folder.id}
-              className="text-sm font-medium cursor-pointer hover:underline"
+              key={`folder-${folder.id}`}
+              className="flex items-center justify-between rounded px-2 py-1 text-sm font-medium cursor-pointer hover:bg-muted/50"
               onClick={() => navigateToFolder(folder.id)}
             >
-              📁 {folder.name}
+              <span className="hover:underline">📁 {folder.name}</span>
+              <ItemActionsMenu id={folder.id} type="folder" name={folder.name} />
             </li>
           ))}
           {data.documents.map((document) => (
-            <li key={document.id} className="text-sm">
-              📄 {document.name}
+            <li
+              key={`document-${document.id}`}
+              className="flex items-center justify-between rounded px-2 py-1 text-sm hover:bg-muted/50"
+            >
+              <span>📄 {document.name}</span>
+              <ItemActionsMenu id={document.id} type="document" name={document.name} />
             </li>
           ))}
         </ul>
