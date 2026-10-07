@@ -1,3 +1,14 @@
+export interface UserRegister {
+  email: string;
+  password: string;
+}
+
+export interface UserResponse {
+  id: number;
+  email: string;
+  created_at: string;
+}
+
 export interface FolderResponse {
   id: number;
   name: string;
