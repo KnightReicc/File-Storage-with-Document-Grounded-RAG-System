@@ -3,6 +3,11 @@ export interface UserRegister {
   password: string;
 }
 
+export interface UserLogin {
+  email: string;
+  password: string;
+}
+
 export interface UserResponse {
   id: number;
   email: string;
