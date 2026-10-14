@@ -41,6 +41,10 @@ export interface DownloadURLResponse {
   url: string;
 }
 
+export interface MessageResponse {
+  msg: string;
+}
+
 export interface FolderCreate {
   name: string;
   parent_folder_id?: number | null;
