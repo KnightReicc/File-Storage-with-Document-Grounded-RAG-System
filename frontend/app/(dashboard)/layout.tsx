@@ -6,8 +6,10 @@ import { UploadDialog } from "@/components/files/upload-dialog";
 import { RagPanel } from "@/components/layout/rag-panel";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/topbar";
+import { CreateFolderDialog } from "@/components/files/create-folder-dialog";
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
+  const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const { currentFolderId } = useFolderNavigation();
   const [ragOpen, setRagOpen] = useState(false);
@@ -18,11 +20,20 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       <Sidebar view={view} onViewChange={setView} />
 
       <div className="flex flex-col flex-1 min-w-0">
-        <TopBar onToggleRagPanel={() => setRagOpen((prev) => !prev)} onOpenUpload={() => setIsUploadOpen(true)} />
+        <TopBar
+          onToggleRagPanel={() => setRagOpen((prev) => !prev)}
+          onOpenUpload={() => setIsUploadOpen(true)}
+          onOpenCreateFolder={() => setIsCreateFolderOpen(true)}
+        />
         <main className="flex-1 overflow-auto p-4">{children}</main>
       </div>
 
       <UploadDialog open={isUploadOpen} onOpenChange={setIsUploadOpen} folderId={currentFolderId} />
+      <CreateFolderDialog
+        open={isCreateFolderOpen}
+        onOpenChange={setIsCreateFolderOpen}
+        parentFolderId={currentFolderId}
+      />
       {ragOpen && <RagPanel />}
     </div>
   );

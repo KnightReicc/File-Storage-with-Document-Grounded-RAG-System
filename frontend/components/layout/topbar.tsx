@@ -2,14 +2,15 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowUpDown, MessageSquareText, Search, Upload } from "lucide-react";
+import { ArrowUpDown, MessageSquareText, Search, Upload, FolderPlus } from "lucide-react";
 
 interface TopBarProps {
   onToggleRagPanel: () => void;
   onOpenUpload: () => void;
+  onOpenCreateFolder: () => void;
 }
 
-export function TopBar({ onToggleRagPanel, onOpenUpload }: TopBarProps) {
+export function TopBar({ onToggleRagPanel, onOpenUpload, onOpenCreateFolder }: TopBarProps) {
   return (
     <div className="flex items-center gap-3 border-b p-3">
       <div className="relative flex-1 max-w-sm">
@@ -27,6 +28,11 @@ export function TopBar({ onToggleRagPanel, onOpenUpload }: TopBarProps) {
       <Button size="sm" className="gap-2" onClick={onOpenUpload}>
         <Upload className="h-4 w-4" />
         Upload
+      </Button>
+
+      <Button variant="outline" size="sm" className="gap-2" onClick={onOpenCreateFolder}>
+        <FolderPlus className="h-4 w-4" />
+        New Folder
       </Button>
 
       <Button variant="outline" size="icon" onClick={onToggleRagPanel} aria-label="Toggle RAG panel">

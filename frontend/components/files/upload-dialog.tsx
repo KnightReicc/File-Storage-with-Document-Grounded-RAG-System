@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback } from "react";
-import { useDropzone } from "react-dropzone";
+import { useCallback, useState } from "react";
+import { useDropzone, type FileRejection } from "react-dropzone";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useUploadDocument } from "@/hooks/useUploadDocument";
 import { Upload } from "lucide-react";
@@ -13,19 +13,33 @@ interface UploadDialogProps {
 }
 
 export function UploadDialog({ open, onOpenChange, folderId }: UploadDialogProps) {
-  const { mutate, isPending, isError, error } = useUploadDocument(folderId);
+  const { mutate, isPending, isError, error, reset } = useUploadDocument(folderId);
+  const [dropError, setDropError] = useState<string | null>(null);
 
   const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
+    (acceptedFiles: File[], fileRejections: FileRejection[]) => {
+      if (fileRejections.length > 0) {
+        reset(); // don't show a stale upload error next to this message
+        setDropError("Please upload one file at a time.");
+        return;
+      }
+      setDropError(null);
+
       const file = acceptedFiles[0];
       if (!file) return;
 
-      mutate(file, {
-        onSuccess: () => onOpenChange(false),
-      });
+      mutate(file, { onSuccess: () => onOpenChange(false) });
     },
-    [mutate, onOpenChange],
+    [mutate, onOpenChange, reset],
   );
+
+  const handleOpenChange = (next: boolean) => {
+    if (!next) {
+      reset();
+      setDropError(null);
+    }
+    onOpenChange(next);
+  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -34,7 +48,7 @@ export function UploadDialog({ open, onOpenChange, folderId }: UploadDialogProps
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Upload a file</DialogTitle>
@@ -57,6 +71,7 @@ export function UploadDialog({ open, onOpenChange, folderId }: UploadDialogProps
           )}
         </div>
 
+        {dropError && <p className="text-sm text-destructive">{dropError}</p>}
         {isError && <p className="text-sm text-destructive">{error.message}</p>}
       </DialogContent>
     </Dialog>
