@@ -6,8 +6,14 @@ import { useFolderNavigation } from "@/hooks/useFolderNavigation";
 import { ItemActionsMenu } from "@/components/files/item-actions-menu";
 
 function DashboardContent() {
-  const { currentFolderId, navigateToFolder, navigateBack } = useFolderNavigation();
-  const { data, isPending, isError, error } = useFolderContents({ folder_id: currentFolderId });
+  const { currentFolderId, navigateToFolder, navigateBack, search, sortBy, sortOrder } = useFolderNavigation();
+  const isSearching = search.length > 0;
+  const { data, isPending, isError, error, isPlaceholderData } = useFolderContents({
+    folder_id: currentFolderId,
+    search: isSearching ? search : undefined,
+    sort_by: sortBy,
+    sort_order: sortOrder,
+  });
 
   if (isPending) {
     return <p className="text-sm text-muted-foreground">Loading...</p>;
@@ -19,15 +25,16 @@ function DashboardContent() {
 
   return (
     <>
-      {currentFolderId !== undefined && (
+      {currentFolderId !== undefined && !isSearching && (
         <button className="text-sm text-blue-500 hover:underline mb-4 " onClick={() => navigateBack()}>
           Go back
         </button>
       )}
+      {isSearching && <p className="text-sm text-muted-foreground mb-4">Results for &quot;{search}&quot;</p>}
       {data.folders.length === 0 && data.documents.length === 0 ? (
-        <p className="text-sm text-muted-foreground">This folder is empty.</p>
+        <p className="text-sm text-muted-foreground">{isSearching ? "No results found." : "This folder is empty."}</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className={`space-y-2 transition-opacity ${isPlaceholderData ? "opacity-60" : ""}`}>
           {data.folders.map((folder) => (
             <li
               key={`folder-${folder.id}`}

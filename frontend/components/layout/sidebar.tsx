@@ -19,7 +19,7 @@ export function Sidebar({ view, onViewChange }: SidebarProps) {
     <aside className="w-60 shrink-0 border-r flex flex-col h-full">
       <div className="p-4 flex items-center gap-2">
         <FolderOpen className="h-5 w-5" />
-        <span className="font-semibold">FileVault</span>
+        <span className="font-semibold">Mini Drive</span>
       </div>
 
       <Separator />
