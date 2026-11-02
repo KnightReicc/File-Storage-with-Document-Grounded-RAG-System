@@ -37,7 +37,7 @@ async def upload_document(
         if not verified_folder:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Folder not found or access denied.",
+                detail="Folder not found.",
             )
 
     # Make sure the file has size
@@ -115,7 +115,7 @@ async def rename_document(
     if not verified_document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found or access denied.",
+            detail="Document not found.",
         )
 
     verified_document.name = user_inp.name
@@ -138,7 +138,7 @@ async def delete_document(
     result = await db.execute(query)
     verified_document = result.scalars().first()
     if not verified_document:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found or access denied.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
 
     # Delete MinIO record first, and cancel operation upon failure
     try:
@@ -177,7 +177,7 @@ async def download_document_with_url(
     result = await db.execute(query)
     verified_document = result.scalars().first()
     if not verified_document:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found or access denied.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
 
     try:
         url = generate_download_url(
@@ -194,3 +194,21 @@ async def download_document_with_url(
         ) from e
 
     return DownloadURLResponse(url=url)
+
+
+@router.get("/{document_id}", response_model=DocumentResponse)
+async def read_document(
+    document_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Handles document fetching for read-only view endpoint."""
+
+    # Verify document and ownership
+    query = select(Document).where(Document.id == document_id, Document.owner_id == current_user.id)
+    result = await db.execute(query)
+    verified_document = result.scalar_one_or_none()
+    if not verified_document:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
+
+    return verified_document
