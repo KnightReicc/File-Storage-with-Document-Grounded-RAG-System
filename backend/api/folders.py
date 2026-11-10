@@ -1,12 +1,13 @@
 import logging
 from typing import Annotated, Literal
 
-from core.common_schemas import RenameRequest
+from core.common_schemas import MAX_INT4, RenameRequest
 from core.deps import get_current_user
 from core.folder_schemas import FolderContentsResponse, FolderCreate, FolderResponse
 from database.models import Document, Folder, User
 from database.session import get_db
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import Path as FastAPIPath
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
@@ -32,7 +33,7 @@ async def create_folder(
         if not found_folder_and_user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Parent folder not found or access denied.",
+                detail="Parent folder not found.",
             )
 
     # Save the new folder to database
@@ -48,7 +49,7 @@ async def create_folder(
 async def read_folder(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
-    folder_id: int | None = None,
+    folder_id: Annotated[int | None, Query(ge=1, le=MAX_INT4)] = None,
     search: str | None = None,
     sort_by: Literal["date", "name", "size"] = "date",
     sort_order: Literal["asc", "desc"] = "desc",
@@ -63,7 +64,7 @@ async def read_folder(
         if not verified_folder:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Folder not found or access denied.",
+                detail="Folder not found.",
             )
 
     # Base queries for secured queries
@@ -71,8 +72,8 @@ async def read_folder(
     base_document_query = select(Document).where(Document.owner_id == current_user.id)
 
     if search:
-        folder_query = base_folder_query.where(Folder.name.ilike(f"%{search}%"))
-        document_query = base_document_query.where(Document.name.ilike(f"%{search}%"))
+        folder_query = base_folder_query.where(Folder.name.icontains(search, autoescape=True))
+        document_query = base_document_query.where(Document.name.icontains(search, autoescape=True))
     else:
         folder_query = base_folder_query.where(Folder.parent_folder_id == folder_id)
         document_query = base_document_query.where(Document.folder_id == folder_id)
@@ -104,7 +105,7 @@ async def read_folder(
 
 @router.patch("/{folder_id}", response_model=FolderResponse)
 async def rename_folder(
-    folder_id: int,
+    folder_id: Annotated[int, FastAPIPath(ge=1, le=MAX_INT4)],
     user_inp: RenameRequest,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -116,7 +117,7 @@ async def rename_folder(
     result = await db.execute(query)
     verified_folder = result.scalars().first()
     if not verified_folder:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found or access denied.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found.")
 
     verified_folder.name = user_inp.name
     await db.commit()
@@ -143,7 +144,7 @@ async def _get_folder_and_descendant_ids(db: AsyncSession, root_folder_id: int) 
 
 @router.delete("/{folder_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_folder(
-    folder_id: int,
+    folder_id: Annotated[int, FastAPIPath(ge=1, le=MAX_INT4)],
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
@@ -154,7 +155,7 @@ async def delete_folder(
     result = await db.execute(query)
     verified_folder = result.scalars().first()
     if not verified_folder:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found or access denied.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found.")
 
     # Query the folder's id and every id of its content with ownership
     folder_and_descendant_ids = await _get_folder_and_descendant_ids(db=db, root_folder_id=verified_folder.id)

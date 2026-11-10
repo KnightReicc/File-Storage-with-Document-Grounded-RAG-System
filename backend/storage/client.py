@@ -70,6 +70,9 @@ def generate_download_url(
         params["ResponseContentDisposition"] = f'{disposition}; filename="{safe_filename}"'
 
     if content_type:
+        # Browsers guess the encoding of charset-less text, and often guess wrong for UTF-8
+        if content_type.startswith("text/") and "charset" not in content_type:
+            content_type = f"{content_type}; charset=utf-8"
         params["ResponseContentType"] = content_type
 
     try:

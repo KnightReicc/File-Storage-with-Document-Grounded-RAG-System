@@ -8,13 +8,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Download, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { RenameDialog } from "./rename-dialog";
 import { DeleteConfirmDialog } from "./delete-confirm-dialog";
 import { useRenameFolder } from "@/hooks/useRenameFolder";
 import { useDeleteFolder } from "@/hooks/useDeleteFolder";
 import { useRenameDocument } from "@/hooks/useRenameDocument";
 import { useDeleteDocument } from "@/hooks/useDeleteDocument";
+import { useDownloadDocument } from "@/hooks/useDownloadDocument";
 
 interface ItemActionsMenuProps {
   id: number;
@@ -26,6 +27,7 @@ export function ItemActionsMenu({ id, name, type }: ItemActionsMenuProps) {
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
+  const download = useDownloadDocument();
   const renameFolder = useRenameFolder();
   const deleteFolder = useDeleteFolder();
   const renameDocument = useRenameDocument();
@@ -59,9 +61,18 @@ export function ItemActionsMenu({ id, name, type }: ItemActionsMenuProps) {
           <MoreVertical className="h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          {type === "document" && (
+            <DropdownMenuItem
+              onClick={() => {
+                download.mutate(id);
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             onClick={() => {
-              console.log("rename clicked");
               setRenameOpen(true);
             }}
           >
@@ -70,7 +81,6 @@ export function ItemActionsMenu({ id, name, type }: ItemActionsMenuProps) {
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
-              console.log("rename clicked");
               setDeleteOpen(true);
             }}
             className="text-destructive"

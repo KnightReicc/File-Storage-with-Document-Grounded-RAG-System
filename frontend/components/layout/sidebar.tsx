@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { LogOut, FolderOpen, Grid2X2, List, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useLogout } from "@/hooks/useLogout";
+import Link from "next/link";
 
 interface SidebarProps {
   view: "grid" | "list";
@@ -17,10 +18,10 @@ export function Sidebar({ view, onViewChange }: SidebarProps) {
 
   return (
     <aside className="w-60 shrink-0 border-r flex flex-col h-full">
-      <div className="p-4 flex items-center gap-2">
+      <Link href="/" className="p-4 flex items-center gap-2">
         <FolderOpen className="h-5 w-5" />
-        <span className="font-semibold">Mini Drive</span>
-      </div>
+        <span className="font-semibold">FileVault</span>
+      </Link>
 
       <Separator />
 

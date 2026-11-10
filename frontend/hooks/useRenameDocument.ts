@@ -8,6 +8,7 @@ export function useRenameDocument() {
     mutationFn: ({ id, name }: { id: number; name: string }) => renameDocument(id, { name }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["folders", "contents"] });
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
     },
   });
 }

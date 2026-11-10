@@ -42,3 +42,8 @@ export async function renameDocument(id: number, args: RenameRequest): Promise<D
 export async function deleteDocument(id: number): Promise<null> {
   return apiFetch<null>(`/documents/${id}`, { method: "DELETE" });
 }
+
+// Get a document
+export async function getDocument(id: number): Promise<DocumentResponse> {
+  return apiFetch<DocumentResponse>(`/documents/${id}`, { method: "GET" });
+}

@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 from uuid import uuid4
 
-from core.common_schemas import RenameRequest
+from core.common_schemas import MAX_INT4, RenameRequest
 from core.config import settings
 from core.deps import get_current_user
 from core.document_schemas import DocumentResponse, DownloadURLResponse
@@ -11,6 +11,7 @@ from core.mime import sniff_mime_type
 from database.models import Document, Folder, User
 from database.session import get_db
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
+from fastapi import Path as FastAPIPath
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
@@ -25,7 +26,7 @@ async def upload_document(
     file_obj: UploadFile,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
-    folder_id: int | None = Form(default=None),
+    folder_id: Annotated[int | None, Form(ge=1, le=MAX_INT4)] = None,
 ):
     """Handles the document upload endpoint."""
 
@@ -102,7 +103,7 @@ async def upload_document(
 @router.patch("/{document_id}", response_model=DocumentResponse)
 async def rename_document(
     user_inp: RenameRequest,
-    document_id: int,
+    document_id: Annotated[int, FastAPIPath(ge=1, le=MAX_INT4)],
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
@@ -127,7 +128,7 @@ async def rename_document(
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_document(
-    document_id: int,
+    document_id: Annotated[int, FastAPIPath(ge=1, le=MAX_INT4)],
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
@@ -165,7 +166,7 @@ async def delete_document(
 
 @router.get("/{document_id}/download", response_model=DownloadURLResponse)
 async def download_document_with_url(
-    document_id: int,
+    document_id: Annotated[int, FastAPIPath(ge=1, le=MAX_INT4)],
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
     disposition: Literal["inline", "attachment"] = "inline",
@@ -198,16 +199,16 @@ async def download_document_with_url(
 
 @router.get("/{document_id}", response_model=DocumentResponse)
 async def read_document(
-    document_id: int,
+    document_id: Annotated[int, FastAPIPath(ge=1, le=MAX_INT4)],
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    """Handles document fetching for read-only view endpoint."""
+    """Returns a single document's metadata."""
 
     # Verify document and ownership
     query = select(Document).where(Document.id == document_id, Document.owner_id == current_user.id)
     result = await db.execute(query)
-    verified_document = result.scalar_one_or_none()
+    verified_document = result.scalars().first()
     if not verified_document:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
 

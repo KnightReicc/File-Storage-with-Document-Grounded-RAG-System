@@ -6,8 +6,9 @@ export function useDeleteDocument() {
 
   return useMutation({
     mutationFn: deleteDocument,
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ["folders", "contents"] });
+      queryClient.removeQueries({ queryKey: ["documents", id] });
     },
   });
 }

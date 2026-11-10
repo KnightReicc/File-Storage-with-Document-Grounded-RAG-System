@@ -8,6 +8,7 @@ export function useDeleteFolder() {
     mutationFn: deleteFolder,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["folders", "contents"] });
+      queryClient.removeQueries({ queryKey: ["documents"] });
     },
   });
 }

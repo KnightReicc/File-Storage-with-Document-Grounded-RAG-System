@@ -7,6 +7,8 @@ Currently, some common schemas here are used in:
 
 from pydantic import BaseModel, Field
 
+MAX_INT4 = 2_147_483_647
+
 
 # Renaming folders and documents
 class RenameRequest(BaseModel):

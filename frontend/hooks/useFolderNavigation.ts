@@ -10,7 +10,7 @@ export function useFolderNavigation() {
   // Extract parsed folder id, and convert back to number
   const folderIdString = searchParams.get("folder_id");
   const parsed = folderIdString ? Number(folderIdString) : undefined;
-  const currentFolderId = parsed !== undefined && !Number.isNaN(parsed) ? parsed : undefined;
+  const currentFolderId = parsed !== undefined && Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 
   // Extract search and sort values
   const search = (searchParams.get("search") ?? "").trim();
@@ -52,7 +52,7 @@ export function useFolderNavigation() {
     replaceParams(params);
   };
 
-  // "next"Sorts naming convention to not match the declared ones up top
+  // 'nextSort' parameters naming convention to not match the declared ones up top
   const setSort = (nextSortBy: SortBy, nextSortOrder: SortOrder) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("sort_by", nextSortBy);
